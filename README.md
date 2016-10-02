@@ -31,6 +31,11 @@ Run
 
 ```bash
 $ rosrun picotts picotts.exe
+$ rostopic pub /tts std_msgs/String "OK"
+$ rostopic pub /tts std_msgs/String "en:Hello|en:Hi"
+$ rostopic pub /picotts/engine std_msgs/String "microsoft"
+Read time:
+$ echo -e "data: \"`date +%T`\"\n---" | rostopic pub /tts std_msgs/String -l
 ```
 
 Parameters
@@ -41,7 +46,11 @@ TBD
 Subscriptions
 =============
 
-TBD
+ * /tts [std_msgs/String]
+
+ * /engine [std_msgs/String]
+ Among values "at", "espeak", "festival", "gnustep", "google", "ivona",
+              "microsoft", "pico2wave", "speech_dispatcher"
 
 Publications
 ============
