@@ -13,13 +13,16 @@ find_package(catkin REQUIRED COMPONENTS ${DEPS})
 # nothing to do in this package
 ### 6 - Specify package build info export (catkin_package())
 catkin_package(
-  INCLUDE_DIRS 
+  INCLUDE_DIRS   include
   CATKIN_DEPENDS ${DEPS}
   DEPENDS
 )
 ### 7 - Libraries/Executables to build (add_library()/add_executable()/target_link_libraries())
-include_directories(${catkin_INCLUDE_DIRS})
-add_executable(picotts.exe src/picotts.cpp)
+SET(PKG_INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/picotts)
+include_directories(include  ${catkin_INCLUDE_DIRS})
+add_executable(picotts.exe src/picotts.cpp
+  ${PKG_INC_DIR}/cached_files_map.h
+  ${PKG_INC_DIR}/utils.h)
 target_link_libraries(picotts.exe  ${catkin_LIBRARIES})
 ### 8 - Tests to build (catkin_add_gtest())
 # nothing to do in this package
