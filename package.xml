@@ -10,6 +10,10 @@
   <license>LGPLv3</license>
   <!-- dependencies -->
   <buildtool_depend>catkin</buildtool_depend>
+  <depend>espeak</depend>
+  <depend>festival</depend>
+  <depend>libttspico</depend>
+  <!-- ROS -->
   <depend>roscpp</depend>
   <depend>roslib</depend>
   <depend>std_msgs</depend>

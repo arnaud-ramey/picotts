@@ -50,29 +50,57 @@ Engine _engine;
 utils::Language _language = "en";
 std::vector<std::string> _versions;
 // ENGINE_AT
-static const std::string TMP_AT_FILE = "/tmp/picotts.amr";
+static const std::string TMP_AT_FILE = "/tmp/picotts_at.amr";
 CachedFilesMap _at_cache(ros::package::getPath("picotts") + "/data/AT_cache/index.csv");
 std::string _at_access_token;
+// ENGINE_GOOGLE
+static const std::string TMP_GOOGLE_FILE = "/tmp/picotts_google.mp3";
+CachedFilesMap _google_cache(ros::package::getPath("picotts") + "/data/google_cache/index.csv");
 // ENGINE_IVONA
 std::string _ivona_credentials = "credentials.txt";
+static const std::string TMP_IVONA_FILE = "/tmp/EttsIvona.mp3";
+CachedFilesMap _ivona_cache(ros::package::getPath("picotts") + "/data/ivona_cache/index.csv");
+// ENGINE_MICROSOFT
+static const std::string TMP_MICROSOFT_FILE = "/tmp/picotts_microsoft.wav";
+const std::string MICROSOFT_API_KEY = "6844AE3580856D2EC7A64C79F55F11AA47CB961B";
+CachedFilesMap _microsoft_cache(ros::package::getPath("picotts") + "/data/microsoft_cache/index.csv");
 // ENGINE_PICO2WAVE
-static const std::string TMP_PICO2WAVE_FILE = "/tmp/picotts.wav";
+static const std::string TMP_PICO2WAVE_FILE = "/tmp/picotts_pico2wave.wav";
 CachedFilesMap _pico2wave_cache(ros::package::getPath("picotts") + "/data/pico2wave_cache/index.csv");
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void mplayer_file(const std::string & filename)  {
+bool mplayer_file(const std::string & filename)  {
+  //ROS_INFO("mplayer_file(%s)", filename.c_str());
   std::ostringstream play_cmd;
   // read it with mplayer
   play_cmd.str("");
   play_cmd << "mplayer " << filename << " -really-quiet ";
   play_cmd << " 2> /dev/null ";
-  ROS_INFO("picotts: running command '%s'", play_cmd.str().c_str());
-  system(play_cmd.str().c_str());
+  ROS_INFO("running command '%s'", play_cmd.str().c_str());
+  return (utils::exec_system(play_cmd.str().c_str()) == 0);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+//! \return true if file cached and could be played
+bool mplayer_cached_file_if_available(CachedFilesMap & cache,
+                                      const std::string & key) {
+  std::string cached_file;
+  if (!cache.get_cached_file(key, cached_file)) {
+    //    ROS_INFO("sentence '%s' was not in cache:'%s'",
+    //           key.c_str(), cached_file.c_str());
+    return false;
+  }
+  ROS_INFO("sentence '%s' was already in cache:'%s'",
+         key.c_str(), cached_file.c_str());
+  return mplayer_file(cached_file);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 //! for sentence less than MAX_CHUNK_SIZE characters
-void at_get_short_chunk(const std::string & langAt,
+bool at_get_short_chunk(const std::string & langAt,
                         const std::string & sentence,
                         const std::string & filename_out) {
   printf("at_get_short_chunk('%s':'%s' (size:%i))\n",
@@ -81,29 +109,34 @@ void at_get_short_chunk(const std::string & langAt,
   std::string sentence_clean = sentence;
 
   if (_at_access_token.empty()) {
-    std::string CLIENT_ID="14ys9fpee45ih7mr4he6in5kgwmnyxuw";
-    std::string CLIENT_SECRET_KEY="cgezjftvo5ynif9x55rsbu3s32jkowgc";
+    std::string CLIENT_ID="14ys9fpee45ih7mr4he6in5kgwmnyxuw",
+        CLIENT_SECRET_KEY="cgezjftvo5ynif9x55rsbu3s32jkowgc";
 
     //getting the access_token
     std::ostringstream command;
-    std::string responseFile = "/tmp/respuse_at_cloud_service.txt";
+    std::string responseFile = "/tmp/reply_at_cloud_service.txt";
     command << "curl https://api.att.com/oauth/v4/token --request POST --insecure ";
     //command << " -o " << responseFile;
-    command << "--data \"client_id="<< CLIENT_ID << "&client_secret="<< CLIENT_SECRET_KEY << "&grant_type=client_credentials&scope=SPEECH,STTC,TTS\"" << ">" << responseFile;
-    ROS_INFO("picotts: running command '%s'", command.str().c_str());
-    system(command.str().c_str());
+    command << "--data \"client_id="<< CLIENT_ID << "&client_secret="<< CLIENT_SECRET_KEY
+            << "&grant_type=client_credentials&scope=TTS\" > " << responseFile;
+    ROS_INFO("running command '%s'", command.str().c_str());
+    if (utils::exec_system(command.str().c_str()))
+      return false;
 
     int pos = 0;
     std::string responseContent;
-    //std::stringUtils::retrieve_file(responseFile, responseContent);
     std::ifstream csv_content(responseFile.c_str());
     if (!csv_content.is_open() || !std::getline (csv_content,responseContent)) {
       ROS_WARN("Could not read file '%s'", responseFile.c_str());
-      return;
+      return false;
     }
-    ROS_INFO("Response of authoriation key: %s", responseContent.c_str());
+    ROS_INFO("Response of authorisation key: %s", responseContent.c_str());
     _at_access_token = utils::extract_from_tags
         (responseContent, "\"access_token\":\"","\",\"",pos);
+    if (_at_access_token.empty()) {
+      ROS_WARN("Could not get access token from AT&T");
+      return false;
+    }
     ROS_INFO("Access_token: %s",_at_access_token.c_str());
   } // end if (_at_access_token.empty())
 
@@ -123,8 +156,9 @@ void at_get_short_chunk(const std::string & langAt,
   command2 << " --data \"" << sentence_clean << "\"";
   command2 << " --request POST > \"" << filename_out << "\"";
 
-  ROS_INFO("picotts: running command '%s'", command2.str().c_str());
-  system(command2.str().c_str());
+  ROS_INFO("running command '%s'", command2.str().c_str());
+  utils::exec_system(command2.str().c_str());
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -132,65 +166,138 @@ void at_get_short_chunk(const std::string & langAt,
 void tts_cb(const std_msgs::StringConstPtr & msg) {
   // split sentence and find correct language
   utils::stringSplit(msg->data, "|", &_versions);
-  std::string tosay = "", cached_file;
+  std::string tosay = "";
   if (!utils::find_given_language_in_multilanguage_line(_versions, _language, tosay))
     tosay = msg->data;
+  std::string key = _language + ":" + tosay, cached_file;
   // generate command
   std::ostringstream command;
+
   if (_engine == ENGINE_AT) {
-    if (_at_cache.get_cached_file(tosay, cached_file)) {
-      printf("picotts: sentence '%s' was already in cache:'%s'\n",
-             tosay.c_str(), cached_file.c_str());
-      mplayer_file(cached_file);
-    }
+    if (mplayer_cached_file_if_available(_at_cache, key))
+      return;
+    std::string langAt = "en-US";
+    if (_language == "es")      langAt = "es-US";
+    else if (_language == "en") langAt = "en-US";
     else {
-      at_get_short_chunk("en-US", tosay, TMP_AT_FILE);
-      mplayer_file(TMP_AT_FILE);
-      _at_cache.add_cached_file(tosay, TMP_AT_FILE);
+      ROS_WARN("Unknown language '%s'", _language.c_str());
     }
+    if (at_get_short_chunk(langAt, tosay, TMP_AT_FILE)
+        && mplayer_file(TMP_AT_FILE))
+      _at_cache.add_cached_file(key, TMP_AT_FILE);
   }
   else if (_engine == ENGINE_ESPEAK) {
-    command << "espeak \"" << tosay << "\"";
-    ROS_INFO("picotts: running command '%s'", command.str().c_str());
-    system(command.str().c_str());
+    // https://tuxicoman.jesuislibre.net/2015/05/synthese-vocale-sous-linux.html
+    // $ espeak -v mb/mb-fr1 -s 120 "Bonjour, je parle le français aussi bien que vous. Ou presque."
+    command << "espeak "
+            << (_language == "fr" ? "-v mb/mb-fr1 -s 120 " : "")
+            << "\"" << tosay << "\"";
+    ROS_INFO("running command '%s'", command.str().c_str());
+    utils::exec_system(command.str().c_str());
   }
   else if (_engine == ENGINE_FESTIVAL) {
     command << "echo \"" << tosay << "\" | festival --tts";
-    ROS_INFO("picotts: running command '%s'", command.str().c_str());
-    system(command.str().c_str());
+    ROS_INFO("running command '%s'", command.str().c_str());
+    utils::exec_system(command.str().c_str());
   }
   else if (_engine == ENGINE_GNUSTEP) {
     command << "say \"" << tosay << "\"";
-    ROS_INFO("picotts: running command '%s'", command.str().c_str());
-    system(command.str().c_str());
+    ROS_INFO("running command '%s'", command.str().c_str());
+    utils::exec_system(command.str().c_str());
   }
   else if (_engine == ENGINE_GOOGLE) {
-    ROS_ERROR("ENGINE_GOOGLE not implemented"); return;
+    if (mplayer_cached_file_if_available(_google_cache, key))
+      return;
+    // build the url
+    command << "wget ";
+    command << "\"http://translate.google.com/translate_tts?";
+    command << "tl=" << _language;
+    command << "&q=" << tosay;
+    command << "&ie=UTF-8&total=1&idx=0&client=uc3m";
+    command << "\"";
+    command << " --output-document=" << TMP_GOOGLE_FILE;
+    command << " --no-verbose";
+    // trick Google API with no referrer
+    // cf http://www.askapache.com/dreamhost/wget-header-trick.html
+    command << " --referer=\"\"";
+    command << " --user-agent=\"Mozilla/5.0 (Windows; U; Windows NT 5.1; "
+               "en-US; rv:1.8.1.6) Gecko/20070725 Firefox/2.0.0.6\"";
+    ROS_INFO("running command '%s'", command.str().c_str());
+    if (utils::exec_system(command.str().c_str()) == 0
+        && mplayer_file(TMP_GOOGLE_FILE))
+      _google_cache.add_cached_file(key, TMP_GOOGLE_FILE);
   }
   else if (_engine == ENGINE_IVONA) {
+    if (mplayer_cached_file_if_available(_ivona_cache, key))
+      return;
+    std::string lang_ivona = "en-GB", voicename = "Amy";
+    if (_language == "en") {
+      lang_ivona = "en-GB";
+      voicename = "Amy";
+    } else if (_language == "es") {
+      lang_ivona = "es-ES";
+      voicename = "Conchita";
+    } else if (_language == "fr") {
+      lang_ivona = "fr-FR";
+      voicename = "Celine";
+    } else {
+      ROS_WARN("Unknown language '%s'", _language.c_str());
+    }
     command << "bash " << _scripts_folder << "/ivona.bash \""
-            << _ivona_credentials << "\" \"" << tosay << "\"";
+            << _ivona_credentials << "\"  \""
+            << tosay << "\"  \""
+            << lang_ivona << "\"  \""
+            << voicename << "\"";
+    ROS_INFO("running command '%s'", command.str().c_str());
+    if (utils::exec_system(command.str().c_str()) == 0
+        && mplayer_file(TMP_IVONA_FILE))
+      _ivona_cache.add_cached_file(key, TMP_IVONA_FILE);
   }
   else if (_engine == ENGINE_MICROSOFT) {
-    ROS_ERROR("ENGINE_MICROSOFT not implemented"); return;
+    if (mplayer_cached_file_if_available(_microsoft_cache, key))
+      return;
+    // http://api.microsofttranslator.com/v2/Http.svc/Speak?appId=6844AE3580856D2EC7A64C79F55F11AA47CB961B&text=Hello,%20my%20friend!&language=en
+    std::ostringstream command;
+    command << "wget ";
+    command << "\"http://api.microsofttranslator.com/v2/Http.svc/Speak?";
+    command << "appId=" << MICROSOFT_API_KEY;
+    command << "&language=" << _language;
+    command << "&text=" << tosay;
+    command << "\"";
+    command << " --output-document=" << TMP_MICROSOFT_FILE;
+    command << " --no-verbose";
+    if (utils::exec_system(command.str().c_str()) == 0
+        && mplayer_file(TMP_MICROSOFT_FILE))
+      _microsoft_cache.add_cached_file(key, TMP_MICROSOFT_FILE);
   }
   else if (_engine == ENGINE_PICO2WAVE) {
-    if (_pico2wave_cache.get_cached_file(tosay, cached_file)) {
-      printf("picotts: sentence '%s' was already in cache:'%s'\n",
-             tosay.c_str(), cached_file.c_str());
-      mplayer_file(cached_file);
-    }
+    if (mplayer_cached_file_if_available(_pico2wave_cache, key))
+      return;
+    // https://tuxicoman.jesuislibre.net/2015/05/synthese-vocale-sous-linux.html
+    // $ pico2wave -l fr-FR -w test.wav "Bonjour, je parle le français aussi bien que vous. Ou presque."
+    // it-IT, fr-FR, es-ES, de-DE, en-US and en-GB languages:
+    std::string lang_pico2wave = "en-GB";
+    if (_language == "de")      lang_pico2wave = "de-DE";
+    else if (_language == "es") lang_pico2wave = "es-ES";
+    else if (_language == "en") lang_pico2wave = "en-GB";
+    else if (_language == "fr") lang_pico2wave = "fr-FR";
+    else if (_language == "it") lang_pico2wave = "it-IT";
     else {
-      command << "pico2wave --wave=" << TMP_PICO2WAVE_FILE << " \"" << tosay
-              << "\"; aplay " << TMP_PICO2WAVE_FILE << " --quiet";
-      ROS_INFO("picotts: running command '%s'", command.str().c_str());
-      system(command.str().c_str());
-      _pico2wave_cache.add_cached_file(tosay, TMP_PICO2WAVE_FILE);
+      ROS_WARN("Unknown language '%s'", _language.c_str());
     }
-  } else if (_engine == ENGINE_SPEECH_DISPATCHER) {
+    command << "pico2wave "
+            << "  --lang=" << lang_pico2wave
+            << "  --wave=" << TMP_PICO2WAVE_FILE
+            << "  \"" << tosay << "\"";
+    ROS_INFO("running command '%s'", command.str().c_str());
+    if (utils::exec_system(command.str().c_str()) == 0
+        && mplayer_file(TMP_PICO2WAVE_FILE))
+      _pico2wave_cache.add_cached_file(key, TMP_PICO2WAVE_FILE);
+  }
+  else if (_engine == ENGINE_SPEECH_DISPATCHER) {
     command << "spd-say \"" << tosay << "\"";
-    ROS_INFO("picotts: running command '%s'", command.str().c_str());
-    system(command.str().c_str());
+    ROS_INFO("running command '%s'", command.str().c_str());
+    utils::exec_system(command.str().c_str());
   }
 } // end tts_cb()
 
@@ -237,12 +344,15 @@ int main (int argc, char** argv) {
   ros::init(argc, argv, "picotts"); //Initialise and create a ROS node
   ros::NodeHandle nh_public, nh_private("~");
   // get params
-  nh_public.param("language", _language, _language);
   std::string engine_str = "pico";
   nh_private.param("engine", engine_str, engine_str);
+  nh_public.param("language", _language, _language);
+  nh_private.param("ivona_credentials", _ivona_credentials, _ivona_credentials);
   engine_switcher(engine_str);
   // make subscribers
   ros::Subscriber tts_sub = nh_public.subscribe("tts", 1, tts_cb);
   ros::Subscriber engine_sub = nh_private.subscribe("engine", 1, engine_cb);
+  ROS_INFO("language:'%s', engine:'%s', listening to:'%s'",
+           _language.c_str(), engine_str.c_str(), tts_sub.getTopic().c_str());
   ros::spin();
 }

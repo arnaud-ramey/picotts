@@ -2,8 +2,14 @@
 <!-- to change primitive:
 $ rostopic pub -1 /picotts/engine std_msgs/String "espeak"
 -->
+<!--
+<param name="language" value="en" />
+-->
+<param name="language" value="fr" />
 <node pkg="picotts" type="picotts.exe" name="picotts"
-      output="screen" required="true" />
+      output="screen" required="true" args="_engine:=pico2wave">
+  <param name="ivona_credentials" value="/home/arnaud/Dropbox/code/ros/etts/data/ivona_credencials.txt"/>
+</node>
 
 <node pkg="picotts" type="test_picotts.exe" name="test_picotts"
       output="screen" required="true" />

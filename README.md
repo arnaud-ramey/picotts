@@ -23,6 +23,8 @@ ROS Kinetic + catkin
 Compile with [catkin_make](http://wiki.ros.org/catkin/commands/catkin_make):
 
 ```bash
+$ rosdep install picotts --ignore-src
+$ sudo apt install mbrola mbrola-fr*
 $ catkin_make --only-pkg-with-deps picotts
 ```
 
