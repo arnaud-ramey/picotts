@@ -24,6 +24,10 @@ add_executable(picotts.exe src/picotts.cpp
   ${PKG_INC_DIR}/cached_files_map.h
   ${PKG_INC_DIR}/utils.h)
 target_link_libraries(picotts.exe  ${catkin_LIBRARIES})
+
+add_executable(test_picotts.exe src/test_picotts.cpp
+  ${PKG_INC_DIR}/picotts_publisher.h)
+target_link_libraries(test_picotts.exe  ${catkin_LIBRARIES})
 ### 8 - Tests to build (catkin_add_gtest())
 # nothing to do in this package
 ### 9 - Install rules (install())

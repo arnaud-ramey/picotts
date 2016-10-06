@@ -1,0 +1,10 @@
+<launch>
+<!-- to change primitive:
+$ rostopic pub -1 /picotts/engine std_msgs/String "espeak"
+-->
+<node pkg="picotts" type="picotts.exe" name="picotts"
+      output="screen" required="true" />
+
+<node pkg="picotts" type="test_picotts.exe" name="test_picotts"
+      output="screen" required="true" />
+</launch>
