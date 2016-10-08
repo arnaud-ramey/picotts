@@ -169,7 +169,10 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
   std::string tosay = "";
   if (!utils::find_given_language_in_multilanguage_line(_versions, _language, tosay))
     tosay = msg->data;
-  std::string key = _language + ":" + tosay, cached_file;
+  std::string key = _language + ":" + tosay;
+  // clean sentence
+  std::string tosay_clean = tosay;
+  utils::find_and_replace(tosay_clean, "\"", "\\\"");
   // generate command
   std::ostringstream command;
 
@@ -182,7 +185,7 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
     else {
       ROS_WARN("Unknown language '%s'", _language.c_str());
     }
-    if (at_get_short_chunk(langAt, tosay, TMP_AT_FILE)
+    if (at_get_short_chunk(langAt, tosay_clean, TMP_AT_FILE)
         && mplayer_file(TMP_AT_FILE))
       _at_cache.add_cached_file(key, TMP_AT_FILE);
   }
@@ -191,17 +194,17 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
     // $ espeak -v mb/mb-fr1 -s 120 "Bonjour, je parle le français aussi bien que vous. Ou presque."
     command << "espeak "
             << (_language == "fr" ? "-v mb/mb-fr1 -s 120 " : "")
-            << "\"" << tosay << "\"";
+            << "\"" << tosay_clean << "\"";
     ROS_INFO("running command '%s'", command.str().c_str());
     utils::exec_system(command.str().c_str());
   }
   else if (_engine == ENGINE_FESTIVAL) {
-    command << "echo \"" << tosay << "\" | festival --tts";
+    command << "echo \"" << tosay_clean << "\" | festival --tts";
     ROS_INFO("running command '%s'", command.str().c_str());
     utils::exec_system(command.str().c_str());
   }
   else if (_engine == ENGINE_GNUSTEP) {
-    command << "say \"" << tosay << "\"";
+    command << "say \"" << tosay_clean << "\"";
     ROS_INFO("running command '%s'", command.str().c_str());
     utils::exec_system(command.str().c_str());
   }
@@ -212,7 +215,7 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
     command << "wget ";
     command << "\"http://translate.google.com/translate_tts?";
     command << "tl=" << _language;
-    command << "&q=" << tosay;
+    command << "&q=" << tosay_clean;
     command << "&ie=UTF-8&total=1&idx=0&client=uc3m";
     command << "\"";
     command << " --output-document=" << TMP_GOOGLE_FILE;
@@ -245,7 +248,7 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
     }
     command << "bash " << _scripts_folder << "/ivona.bash \""
             << _ivona_credentials << "\"  \""
-            << tosay << "\"  \""
+            << tosay_clean << "\"  \""
             << lang_ivona << "\"  \""
             << voicename << "\"";
     ROS_INFO("running command '%s'", command.str().c_str());
@@ -262,7 +265,7 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
     command << "\"http://api.microsofttranslator.com/v2/Http.svc/Speak?";
     command << "appId=" << MICROSOFT_API_KEY;
     command << "&language=" << _language;
-    command << "&text=" << tosay;
+    command << "&text=" << tosay_clean;
     command << "\"";
     command << " --output-document=" << TMP_MICROSOFT_FILE;
     command << " --no-verbose";
@@ -288,14 +291,14 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
     command << "pico2wave "
             << "  --lang=" << lang_pico2wave
             << "  --wave=" << TMP_PICO2WAVE_FILE
-            << "  \"" << tosay << "\"";
+            << "  \"" << tosay_clean << "\"";
     ROS_INFO("running command '%s'", command.str().c_str());
     if (utils::exec_system(command.str().c_str()) == 0
         && mplayer_file(TMP_PICO2WAVE_FILE))
       _pico2wave_cache.add_cached_file(key, TMP_PICO2WAVE_FILE);
   }
   else if (_engine == ENGINE_SPEECH_DISPATCHER) {
-    command << "spd-say \"" << tosay << "\"";
+    command << "spd-say \"" << tosay_clean << "\"";
     ROS_INFO("running command '%s'", command.str().c_str());
     utils::exec_system(command.str().c_str());
   }

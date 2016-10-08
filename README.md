@@ -3,6 +3,14 @@ picotts
 
 A lightweight ROS package for Text-to-Speech generation.
 
+
+ - MaryTTS
+  https://github.com/knowrob/knowrob_addons/tree/master/mary_tts
+
+```bash
+$ svn co https://github.com/knowrob/knowrob_addons/trunk/mary_tts
+```
+
 Licence
 =======
 
