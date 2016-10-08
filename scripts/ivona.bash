@@ -19,8 +19,7 @@
 # Useful links:
 # http://developer.ivona.com/en/speechcloud/api_ref_data_types.html#DataTypes_Data
 # http://developer.ivona.com/en/speechcloud/dev_guide_using_http_get_for_api_requests.html
-if [ $# -lt 1 ]
-then
+if [ $# -lt 1 ]; then
   echo "Simple voice generation using IVONA web service."
   echo "Synopsis: ivona.bash CREDENTIALFILE SENTENCE LANG VOICENAME RATE VOLUME"
   exit -1

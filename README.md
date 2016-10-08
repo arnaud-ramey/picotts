@@ -5,10 +5,19 @@ A lightweight ROS package for Text-to-Speech generation.
 
 
  - MaryTTS
-  https://github.com/knowrob/knowrob_addons/tree/master/mary_tts
+ [download page](http://mary.dfki.de/download/)
+ [direct v5.2 download link](https://github.com/marytts/marytts/releases/download/v5.2/marytts-5.2.zip)
+
+  - List of voices: http://localhost:59125/voices
+    Best French voice: "upmc-pierre-hsmm fr male hmm" & "enst-camille-hsmm fr female hmm"
+    English: "dfki-spike-hsmm en_GB male hmm"
+    "cmu-slt-hsmm en_US female hmm"
+    wget:
+    http://www.dfki.de/pipermail/mary-users/2011-September/date.html#1029
 
 ```bash
-$ svn co https://github.com/knowrob/knowrob_addons/trunk/mary_tts
+$ wget  "http://localhost:59125/process?INPUT_TYPE=TEXT&OUTPUT_TYPE=AUDIO&INPUT_TEXT=Welcome to the world of speech synthesis. I am using wget\!&AUDIO_OUT=WAVE_FILE&LOCALE=en_US&VOICE=cmu-slt-hsmm&AUDIO=WAVE_FILE"  -O /tmp/marytts.wav --quiet
+$ aplay /tmp/marytts.wav
 ```
 
 Licence

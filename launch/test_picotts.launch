@@ -11,6 +11,9 @@ $ rostopic pub -1 /picotts/engine std_msgs/String "espeak"
   <param name="ivona_credentials" value="/home/arnaud/Dropbox/code/ros/etts/data/ivona_credencials.txt"/>
 </node>
 
+<node pkg="picotts" type="marytts_server.bash" name="marytts_server"
+      output="screen" required="true" />
+
 <node pkg="picotts" type="test_picotts.exe" name="test_picotts"
       output="screen" required="true" />
 </launch>
