@@ -34,7 +34,7 @@
 
 
 enum Engine {
-  ENGINE_AT,
+  ENGINE_ATandT,
   ENGINE_ESPEAK,
   ENGINE_FESTIVAL,
   ENGINE_GNUSTEP,
@@ -50,7 +50,7 @@ std::string _scripts_folder = ros::package::getPath("picotts") + "/scripts";
 Engine _engine;
 utils::Language _language = "en";
 std::vector<std::string> _versions;
-// ENGINE_AT
+// ENGINE_ATandT
 static const std::string TMP_AT_FILE = "/tmp/picotts_at.amr";
 CachedFilesMap _at_cache(ros::package::getPath("picotts") + "/data/AT_cache/index.csv");
 std::string _at_access_token;
@@ -180,7 +180,7 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
   // generate command
   std::ostringstream command;
 
-  if (_engine == ENGINE_AT) {
+  if (_engine == ENGINE_ATandT) {
     if (mplayer_cached_file_if_available(_at_cache, key))
       return;
     std::string langAt = "en-US";
@@ -192,7 +192,7 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
     if (at_get_short_chunk(langAt, tosay_clean, TMP_AT_FILE)
         && mplayer_file(TMP_AT_FILE))
       _at_cache.add_cached_file(key, TMP_AT_FILE);
-  } // end if (ENGINE_AT)
+  } // end if (ENGINE_ATandT)
   else if (_engine == ENGINE_ESPEAK) {
     // list of languages: $ espeak --voices
     // to sort them:      $ espeak --voices | awk '{ print $2 }' | sort
@@ -355,8 +355,8 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
 bool engine_switcher(const std::string & engine_str) {
   std::string engine_lower = engine_str;
   std::transform(engine_lower.begin(), engine_lower.end(), engine_lower.begin(), ::tolower);
-  if (engine_lower.find("at") != std::string::npos) {
-    _engine = ENGINE_AT;
+  if (engine_lower.find("at&t") != std::string::npos) {
+    _engine = ENGINE_ATandT;
   } else if (engine_lower.find("espeak") != std::string::npos) {
     _engine = ENGINE_ESPEAK;
   } else if (engine_lower.find("festival") != std::string::npos) {

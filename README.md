@@ -135,7 +135,7 @@ Parameters
   the first being the access key, the second the secret key.
 
  * ```~engine``` [std_msgs/String]
-  Among values  "at", "espeak", "festival", "gnustep", "google", "ivona", "marytts"
+  Among values  "at&t", "espeak", "festival", "gnustep", "google", "ivona", "marytts"
                 "microsoft", "pico2wave", "speech_dispatcher".
   Ensure to choose a webservice engine only if connected to the Internet.
 
