@@ -3,7 +3,7 @@
 # MARY TTS server
 ##########################################################################
 
-if [ $# -ne 1 ]; then
+if [ $# -lt 1 ]; then
   echo "Launch Mary TTS as server."
   echo "Synopsis: ivona.bash MARY_BASE"
   echo " where MARY_BASE is the folder containing bin, lib, etc."

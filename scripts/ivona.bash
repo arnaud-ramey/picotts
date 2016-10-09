@@ -64,6 +64,7 @@ content_type='application/json'
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 http_request_method='POST'
 canonical_uri='/CreateSpeech'
+#~ canonical_uri='/ListVoices'
 canonical_query_string=''
 
 hashed_payload=$(printf "$payload" | sha256sum)

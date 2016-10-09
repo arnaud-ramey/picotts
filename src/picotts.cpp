@@ -40,6 +40,7 @@ enum Engine {
   ENGINE_GNUSTEP,
   ENGINE_GOOGLE, // online
   ENGINE_IVONA, // online
+  ENGINE_MARYTTS,
   ENGINE_MICROSOFT, // online
   ENGINE_PICO2WAVE,
   ENGINE_SPEECH_DISPATCHER
@@ -60,6 +61,9 @@ CachedFilesMap _google_cache(ros::package::getPath("picotts") + "/data/google_ca
 std::string _ivona_credentials = "credentials.txt";
 static const std::string TMP_IVONA_FILE = "/tmp/EttsIvona.mp3";
 CachedFilesMap _ivona_cache(ros::package::getPath("picotts") + "/data/ivona_cache/index.csv");
+// ENGINE_MARYTTS
+static const std::string TMP_MARYTTS_FILE = "/tmp/picotts_marytts.wav";
+CachedFilesMap _marytts_cache(ros::package::getPath("picotts") + "/data/marytts_cache/index.csv");
 // ENGINE_MICROSOFT
 static const std::string TMP_MICROSOFT_FILE = "/tmp/picotts_microsoft.wav";
 const std::string MICROSOFT_API_KEY = "6844AE3580856D2EC7A64C79F55F11AA47CB961B";
@@ -93,7 +97,7 @@ bool mplayer_cached_file_if_available(CachedFilesMap & cache,
     return false;
   }
   ROS_INFO("sentence '%s' was already in cache:'%s'",
-         key.c_str(), cached_file.c_str());
+           key.c_str(), cached_file.c_str());
   return mplayer_file(cached_file);
 }
 
@@ -183,32 +187,39 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
     if (_language == "es")      langAt = "es-US";
     else if (_language == "en") langAt = "en-US";
     else {
-      ROS_WARN("Unknown language '%s'", _language.c_str());
+      ROS_WARN("Unsupported language'%s'", _language.c_str());
     }
     if (at_get_short_chunk(langAt, tosay_clean, TMP_AT_FILE)
         && mplayer_file(TMP_AT_FILE))
       _at_cache.add_cached_file(key, TMP_AT_FILE);
-  }
+  } // end if (ENGINE_AT)
   else if (_engine == ENGINE_ESPEAK) {
+    // list of languages: $ espeak --voices
+    // to sort them:      $ espeak --voices | awk '{ print $2 }' | sort
     // https://tuxicoman.jesuislibre.net/2015/05/synthese-vocale-sous-linux.html
     // $ espeak -v mb/mb-fr1 -s 120 "Bonjour, je parle le français aussi bien que vous. Ou presque."
-    command << "espeak "
-            << (_language == "fr" ? "-v mb/mb-fr1 -s 120 " : "")
-            << "\"" << tosay_clean << "\"";
+    command << "espeak ";
+    if (_language == "fr" || _language == "fr-FR")
+      command << "-v mb/mb-fr1 -s 120";
+    else
+      command << "-v " << _language;
+    command << " \"" << tosay_clean << "\"";
     ROS_INFO("running command '%s'", command.str().c_str());
     utils::exec_system(command.str().c_str());
-  }
+  } // end if (ENGINE_ESPEAK)
   else if (_engine == ENGINE_FESTIVAL) {
-    command << "echo \"" << tosay_clean << "\" | festival --tts";
+    // list languages: $ festival --language xxx
+    command << "echo \"" << tosay_clean << "\" | festival --tts --lang=" << _language;
     ROS_INFO("running command '%s'", command.str().c_str());
     utils::exec_system(command.str().c_str());
-  }
+  } // end if (ENGINE_FESTIVAL)
   else if (_engine == ENGINE_GNUSTEP) {
     command << "say \"" << tosay_clean << "\"";
     ROS_INFO("running command '%s'", command.str().c_str());
     utils::exec_system(command.str().c_str());
-  }
+  } // end if (ENGINE_GNUSTEP)
   else if (_engine == ENGINE_GOOGLE) {
+    // list languages: https://translate.google.com/#en/af/test and check for "loudspeaker" button
     if (mplayer_cached_file_if_available(_google_cache, key))
       return;
     // build the url
@@ -229,8 +240,9 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
     if (utils::exec_system(command.str().c_str()) == 0
         && mplayer_file(TMP_GOOGLE_FILE))
       _google_cache.add_cached_file(key, TMP_GOOGLE_FILE);
-  }
+  } // end if (ENGINE_GOOGLE)
   else if (_engine == ENGINE_IVONA) {
+    // list languages: https://www.ivona.com/us/about-us/voice-portfolio/
     if (mplayer_cached_file_if_available(_ivona_cache, key))
       return;
     std::string lang_ivona = "en-GB", voicename = "Amy";
@@ -244,7 +256,7 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
       lang_ivona = "fr-FR";
       voicename = "Celine";
     } else {
-      ROS_WARN("Unknown language '%s'", _language.c_str());
+      ROS_WARN("Unsupported language'%s'", _language.c_str());
     }
     command << "bash " << _scripts_folder << "/ivona.bash \""
             << _ivona_credentials << "\"  \""
@@ -255,11 +267,42 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
     if (utils::exec_system(command.str().c_str()) == 0
         && mplayer_file(TMP_IVONA_FILE))
       _ivona_cache.add_cached_file(key, TMP_IVONA_FILE);
-  }
+  } // end if (ENGINE_IVONA)
+  else if (_engine == ENGINE_MARYTTS) {
+    // list languages: http://localhost:59125/locales: de en_GB en_US fr it lb ru sv te tr
+    if (mplayer_cached_file_if_available(_marytts_cache, key))
+      return;
+    command << "wget ";
+    command << "\"http://localhost:59125/process?INPUT_TYPE=TEXT";
+    command << "&OUTPUT_TYPE=AUDIO";
+    command << "&AUDIO_OUT=WAVE_FILE";
+    command << "&AUDIO=WAVE_FILE";
+    if (_language == "en")
+      command << "&LOCALE=en-US";
+    else
+      command << "&LOCALE=" << _language;
+    if (_language == "en")
+      command << "&VOICE=cmu-slt-hsmm"; // en_US female hmm
+    else if (_language == "fr")
+      command << "&VOICE=upmc-pierre-hsmm"; // fr male hmm
+    else {
+      ROS_WARN("Unsupported language'%s'", _language.c_str());
+      command << "&VOICE=cmu-slt-hsmm"; // en_US female hmm
+    }
+    command << "&INPUT_TEXT=" << tosay_clean;
+    command << "\"";
+    command << " --output-document=" << TMP_MARYTTS_FILE;
+    command << " --quiet";
+    if (utils::exec_system(command.str().c_str()) == 0
+        && mplayer_file(TMP_MARYTTS_FILE))
+      _marytts_cache.add_cached_file(key, TMP_MARYTTS_FILE);
+  } // end if (ENGINE_ENGINE_MARYTTS)
   else if (_engine == ENGINE_MICROSOFT) {
+    // http://api.microsofttranslator.com/v2/Http.svc/Speak?appId=6844AE3580856D2EC7A64C79F55F11AA47CB961B&text=Hello,%20my%20friend!&language=en
+    // list of languages:
+    // http://api.microsofttranslator.com/v2/Http.svc/GetLanguagesForSpeak?appId=6844AE3580856D2EC7A64C79F55F11AA47CB961B
     if (mplayer_cached_file_if_available(_microsoft_cache, key))
       return;
-    // http://api.microsofttranslator.com/v2/Http.svc/Speak?appId=6844AE3580856D2EC7A64C79F55F11AA47CB961B&text=Hello,%20my%20friend!&language=en
     std::ostringstream command;
     command << "wget ";
     command << "\"http://api.microsofttranslator.com/v2/Http.svc/Speak?";
@@ -272,13 +315,13 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
     if (utils::exec_system(command.str().c_str()) == 0
         && mplayer_file(TMP_MICROSOFT_FILE))
       _microsoft_cache.add_cached_file(key, TMP_MICROSOFT_FILE);
-  }
+  } // end if (ENGINE_MICROSOFT)
   else if (_engine == ENGINE_PICO2WAVE) {
-    if (mplayer_cached_file_if_available(_pico2wave_cache, key))
-      return;
     // https://tuxicoman.jesuislibre.net/2015/05/synthese-vocale-sous-linux.html
     // $ pico2wave -l fr-FR -w test.wav "Bonjour, je parle le français aussi bien que vous. Ou presque."
-    // it-IT, fr-FR, es-ES, de-DE, en-US and en-GB languages:
+    // list languages: $ pico2wave --lang xxx -w foo.wav "ok"
+    if (mplayer_cached_file_if_available(_pico2wave_cache, key))
+      return;
     std::string lang_pico2wave = "en-GB";
     if (_language == "de")      lang_pico2wave = "de-DE";
     else if (_language == "es") lang_pico2wave = "es-ES";
@@ -286,7 +329,7 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
     else if (_language == "fr") lang_pico2wave = "fr-FR";
     else if (_language == "it") lang_pico2wave = "it-IT";
     else {
-      ROS_WARN("Unknown language '%s'", _language.c_str());
+      ROS_WARN("Unsupported language'%s'", _language.c_str());
     }
     command << "pico2wave "
             << "  --lang=" << lang_pico2wave
@@ -296,12 +339,15 @@ void tts_cb(const std_msgs::StringConstPtr & msg) {
     if (utils::exec_system(command.str().c_str()) == 0
         && mplayer_file(TMP_PICO2WAVE_FILE))
       _pico2wave_cache.add_cached_file(key, TMP_PICO2WAVE_FILE);
-  }
+  } // end if (ENGINE_PICO2WAVE)
   else if (_engine == ENGINE_SPEECH_DISPATCHER) {
-    command << "spd-say \"" << tosay_clean << "\"";
+    // list languages: $ spd-say --list-synthesis-voices | awk ' { print $2 } ' | sort -u | tr '\n' ' '
+    command << "spd-say";
+    command << " --language " << _language;
+    command << " \"" << tosay_clean << "\"";
     ROS_INFO("running command '%s'", command.str().c_str());
     utils::exec_system(command.str().c_str());
-  }
+  } // end if (ENGINE_SPEECH_DISPATCHER)
 } // end tts_cb()
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -321,6 +367,8 @@ bool engine_switcher(const std::string & engine_str) {
     _engine = ENGINE_GOOGLE;
   } else if (engine_lower.find("ivona") != std::string::npos) {
     _engine = ENGINE_IVONA;
+  } else if (engine_lower.find("mary") != std::string::npos) {
+    _engine = ENGINE_MARYTTS;
   } else if (engine_lower.find("microsoft") != std::string::npos) {
     _engine = ENGINE_MICROSOFT;
   } else if (engine_lower.find("pico") != std::string::npos) {
@@ -348,8 +396,8 @@ int main (int argc, char** argv) {
   ros::NodeHandle nh_public, nh_private("~");
   // get params
   std::string engine_str = "pico";
-  nh_private.param("engine", engine_str, engine_str);
   nh_public.param("language", _language, _language);
+  nh_private.param("engine", engine_str, engine_str);
   nh_private.param("ivona_credentials", _ivona_credentials, _ivona_credentials);
   engine_switcher(engine_str);
   // make subscribers
