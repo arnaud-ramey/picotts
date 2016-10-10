@@ -90,6 +90,52 @@ Authors
 Compile and install
 ===================
 
+Dependencies
+------------
+
+  - AT&T (WEBSERVICE):
+```bash
+$ rosdep install picotts --ignore-src
+```
+  - espeak:
+```bash
+$ rosdep install picotts --ignore-src
+```
+  - Festival:
+```bash
+$ sudo apt install mbrola mbrola-fr*
+$ rosdep install picotts --ignore-src
+```
+  - GNUstep:
+```bash
+$ sudo apt install gnustep-gui-runtime
+```
+  - Google TTS (WEBSERVICE):
+```bash
+$ rosdep install picotts --ignore-src
+```
+  - Ivona (WEBSERVICE):
+```bash
+$ rosdep install picotts --ignore-src
+```
+  - MaryTTS:
+```bash
+$ sudo apt install default-jre
+```
+  - Microsoft (WEBSERVICE):
+```bash
+$ rosdep install picotts --ignore-src
+```
+  - pico2wave:
+```bash
+$ rosdep install picotts --ignore-src
+```
+  - speech_dispatcher:
+```bash
+$ sudo apt install speech-dispatcher
+```
+
+
 ROS Kinetic + catkin
 -------------------
 
@@ -97,7 +143,6 @@ Compile with [catkin_make](http://wiki.ros.org/catkin/commands/catkin_make):
 
 ```bash
 $ rosdep install picotts --ignore-src
-$ sudo apt install mbrola mbrola-fr*
 $ catkin_make --only-pkg-with-deps picotts
 ```
 
