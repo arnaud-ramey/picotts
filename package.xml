@@ -13,6 +13,7 @@
   <depend>curl</depend>
   <depend>espeak</depend>
   <depend>festival</depend>
+  <depend>java</depend>
   <depend>libttspico</depend>
   <depend>wget</depend>
   <!-- ROS -->
