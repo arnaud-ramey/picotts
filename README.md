@@ -1,6 +1,8 @@
 picotts
 =======
 
+[![Build Status](https://travis-ci.org/arnaud-ramey/picotts.svg)](https://travis-ci.org/arnaud-ramey/picotts)
+
 A lightweight ROS package for Text-to-Speech (TTS) generation.
 It is actually a wrapper around popular TTS engines,
 it supports a bunch of both online and offline third parties.
