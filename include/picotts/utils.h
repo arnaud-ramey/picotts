@@ -112,7 +112,7 @@ inline bool retrieve_file_split(const std::string & filepath,
  * \param content the string to save
  */
 inline bool save_file(const std::string & filepath, const std::string & content) {
-  // maggieDebug2("save_file('%s')", filepath.c_str());
+  // ROS_INFO("save_file('%s')", filepath.c_str());
   std::ofstream myfile(filepath.c_str());
   if (!myfile.is_open()) { // check if success
     printf("Unable to open file '%s' for writing.\n", filepath.c_str());
