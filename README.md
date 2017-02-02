@@ -81,7 +81,7 @@ Their meaning is [available on Wikipedia](https://en.wikipedia.org/wiki/List_of_
 Licence
 =======
 
-BSD
+LGPLv3
 
 
 Authors
