@@ -15,6 +15,7 @@
   <depend>festival</depend>
   <depend>java</depend>
   <depend>libglib-dev</depend>
+  <depend>libnotify-dev</depend>
   <depend>libttspico</depend>
   <depend>wget</depend>
   <!-- ROS -->
