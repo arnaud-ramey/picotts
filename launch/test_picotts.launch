@@ -17,4 +17,7 @@ $ rostopic pub -1 /picotts/engine std_msgs/String "espeak"
 
 <node pkg="picotts" type="test_picotts.exe" name="test_picotts"
       output="screen" required="true" />
+
+<node pkg="picotts" type="tts2notify.exe" name="tts2notify"
+      output="screen" required="false" />
 </launch>
