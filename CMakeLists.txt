@@ -11,6 +11,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMake/Modules")
 find_package(GDK-PixBuf REQUIRED)
 find_package(Glib REQUIRED)
 find_package(GObject REQUIRED)
+find_package(Libnotify REQUIRED)
 # nothing to do in this package
 ### 4 - Message/Service/Action Generators (add_message_files(), add_service_files(), add_action_files())
 # nothing to do in this package
@@ -29,6 +30,7 @@ include_directories(include
   ${GDK-PixBuf_INCLUDE_DIRS}
   ${Glib_INCLUDE_DIRS}
   ${GOBJECT_INCLUDE_DIR}
+  ${LIBNOTIFY_INCLUDE_DIR}
 )
 add_executable       (picotts.exe  src/picotts.cpp
   ${PKG_INC_DIR}/cached_files_map.h
@@ -40,7 +42,7 @@ target_link_libraries(tts2notify.exe  ${catkin_LIBRARIES}
   ${GDK-PixBuf_LIBRARIES}
   ${Glib_LIBRARIES}
   ${GOBJECT_LIBRARIES}
-  notify
+  ${LIBNOTIFY_LIBRARIES}
 )
 
 add_executable       (test_picotts.exe  src/test_picotts.cpp
