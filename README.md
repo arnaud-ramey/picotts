@@ -123,6 +123,10 @@ $ rosdep install picotts --ignore-src
   - MaryTTS:
 ```bash
 $ sudo apt install default-jre
+$ wget https://github.com/marytts/marytts/releases/download/v5.2/marytts-5.2.zip
+$ unzip marytts-5.2.zip ; cd marytts-5.2
+$ wget https://github.com/marytts/voice-upmc-pierre-hsmm/releases/download/v5.2/voice-upmc-pierre-hsmm-5.2.zip
+$ unzip voice-upmc-pierre-hsmm-5.2.zip
 ```
   - Microsoft (WEBSERVICE):
 ```bash
